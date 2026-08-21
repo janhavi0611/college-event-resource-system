@@ -1,8 +1,26 @@
+import os
+from pathlib import Path
+
 from flask import Flask
+
+from .extensions import db, migrate
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
+
+    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+    database_path = Path(app.instance_path) / "app.db"
+
+    app.config.from_mapping(
+        SECRET_KEY=os.getenv("SECRET_KEY", "dev-secret-key"),
+        SQLALCHEMY_DATABASE_URI=f"sqlite:///{database_path}",
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+
+    db.init_app(app)
+    migrate.init_app(app, db)
 
     @app.route("/")
     def home():
