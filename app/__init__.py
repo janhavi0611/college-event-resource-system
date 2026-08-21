@@ -1,9 +1,11 @@
 import os
+
 from pathlib import Path
 
 from flask import Flask
 
 from .extensions import db, migrate
+from .models import Event, Resource
 
 
 def create_app():
