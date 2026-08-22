@@ -26,6 +26,7 @@
                 </p>
             </div>
 
+            <!-- Create Event Button -->
             <a
                 href="{{ url_for('events.create_event') }}"
                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -34,6 +35,119 @@
             </a>
 
         </div>
+
+
+        <!-- Filters -->
+        <form
+            method="GET"
+            class="bg-white rounded-xl shadow p-4 mb-6"
+        >
+
+            <div class="flex flex-col md:flex-row gap-4 items-end">
+
+                <!-- Status Filter -->
+                <div class="flex-1">
+
+                    <label class="block font-medium mb-2">
+                        Filter by Status
+                    </label>
+
+                    <select
+                        name="status"
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                        <option
+                            value=""
+                            {% if not selected_status %}selected{% endif %}
+                        >
+                            All statuses
+                        </option>
+
+                        <option
+                            value="Draft"
+                            {% if selected_status == "Draft" %}selected{% endif %}
+                        >
+                            Draft
+                        </option>
+
+                        <option
+                            value="Pending"
+                            {% if selected_status == "Pending" %}selected{% endif %}
+                        >
+                            Pending
+                        </option>
+
+                        <option
+                            value="Approved"
+                            {% if selected_status == "Approved" %}selected{% endif %}
+                        >
+                            Approved
+                        </option>
+
+                        <option
+                            value="Rejected"
+                            {% if selected_status == "Rejected" %}selected{% endif %}
+                        >
+                            Rejected
+                        </option>
+
+                        <option
+                            value="Cancelled"
+                            {% if selected_status == "Cancelled" %}selected{% endif %}
+                        >
+                            Cancelled
+                        </option>
+
+                        <option
+                            value="Completed"
+                            {% if selected_status == "Completed" %}selected{% endif %}
+                        >
+                            Completed
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Date Filter -->
+                <div class="flex-1">
+
+                    <label class="block font-medium mb-2">
+                        Filter by Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="date"
+                        value="{{ selected_date }}"
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                </div>
+
+
+                <!-- Filter Button -->
+                <button
+                    type="submit"
+                    class="bg-gray-900 text-white px-5 py-2 rounded-lg"
+                >
+                    Filter
+                </button>
+
+
+                <!-- Clear Button -->
+                <a
+                    href="{{ url_for('events.list_events') }}"
+                    class="bg-gray-200 px-5 py-2 rounded-lg"
+                >
+                    Clear
+                </a>
+
+            </div>
+
+        </form>
 
 
         <!-- Events Table -->
@@ -45,6 +159,7 @@
 
                     <table class="w-full">
 
+                        <!-- Table Header -->
                         <thead class="bg-gray-50">
 
                             <tr>
@@ -69,35 +184,86 @@
                                     Status
                                 </th>
 
+                                <th class="text-left px-6 py-4">
+                                    Actions
+                                </th>
+
                             </tr>
 
                         </thead>
 
 
+                        <!-- Table Body -->
                         <tbody>
 
                             {% for event in events %}
 
                                 <tr class="border-t">
 
+                                    <!-- Event Name -->
                                     <td class="px-6 py-4 font-medium">
                                         {{ event.name }}
                                     </td>
 
+
+                                    <!-- Organizer -->
                                     <td class="px-6 py-4">
                                         {{ event.organizer }}
                                     </td>
 
+
+                                    <!-- Attendance -->
                                     <td class="px-6 py-4">
                                         {{ event.expected_attendance }}
                                     </td>
 
+
+                                    <!-- Start Date/Time -->
                                     <td class="px-6 py-4">
                                         {{ event.start_datetime.strftime("%d %b %Y, %I:%M %p") }}
                                     </td>
 
+
+                                    <!-- Status -->
                                     <td class="px-6 py-4">
                                         {{ event.status }}
+                                    </td>
+
+
+                                    <!-- Actions -->
+                                    <td class="px-6 py-4">
+
+                                        <!-- Edit -->
+                                        <a
+                                            href="{{ url_for('events.edit_event', event_id=event.id) }}"
+                                            class="text-blue-600 hover:underline"
+                                        >
+                                            Edit
+                                        </a>
+
+
+                                        <!-- Cancel -->
+                                        {% if event.status != "Cancelled"
+                                              and event.status != "Completed" %}
+
+                                            <form
+                                                method="POST"
+                                                action="{{ url_for('events.cancel_event', event_id=event.id) }}"
+                                                class="inline"
+                                                onsubmit="return confirm('Are you sure you want to cancel this event?');"
+                                            >
+
+                                                <button
+                                                    type="submit"
+                                                    class="text-red-600 hover:underline ml-3"
+                                                >
+                                                    Cancel
+                                                </button>
+
+                                            </form>
+
+                                        {% endif %}
+
                                     </td>
 
                                 </tr>
@@ -112,6 +278,7 @@
 
             {% else %}
 
+                <!-- No Events -->
                 <div class="p-8 text-center text-gray-500">
                     No events found.
                 </div>

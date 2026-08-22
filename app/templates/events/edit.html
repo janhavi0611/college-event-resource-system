@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Edit Event</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="max-w-3xl mx-auto px-6 py-10">
+
+        <div class="mb-8">
+
+            <h1 class="text-3xl font-bold">
+                Edit Event
+            </h1>
+
+            <p class="text-gray-600 mt-1">
+                Update event information
+            </p>
+
+        </div>
+
+
+        {% with messages =
+            get_flashed_messages(with_categories=true)
+        %}
+
+            {% if messages %}
+
+                <div class="mb-6 space-y-2">
+
+                    {% for category, message in messages %}
+
+                        <div
+                            class="bg-red-100 text-red-800
+                                   px-4 py-3 rounded-lg"
+                        >
+                            {{ message }}
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+
+        {% endwith %}
+
+
+        <form
+            method="POST"
+            class="bg-white rounded-xl shadow p-6 space-y-6"
+        >
+
+            <div>
+
+                <label class="block font-medium mb-2">
+                    Event Name
+                </label>
+
+                <input
+                    type="text"
+                    name="name"
+                    value="{{ event.name }}"
+                    required
+                    class="w-full border rounded-lg px-4 py-2"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label class="block font-medium mb-2">
+                    Organizer
+                </label>
+
+                <input
+                    type="text"
+                    name="organizer"
+                    value="{{ event.organizer }}"
+                    required
+                    class="w-full border rounded-lg px-4 py-2"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label class="block font-medium mb-2">
+                    Expected Attendance
+                </label>
+
+                <input
+                    type="number"
+                    name="expected_attendance"
+                    value="{{ event.expected_attendance }}"
+                    min="1"
+                    required
+                    class="w-full border rounded-lg px-4 py-2"
+                >
+
+            </div>
+
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+
+                    <label class="block font-medium mb-2">
+                        Start Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        name="start_datetime"
+                        value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+                        required
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label class="block font-medium mb-2">
+                        End Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        name="end_datetime"
+                        value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') }}"
+                        required
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="flex gap-3">
+
+                <button
+                    type="submit"
+                    class="bg-blue-600 text-white
+                           px-5 py-2 rounded-lg
+                           hover:bg-blue-700"
+                >
+                    Save Changes
+                </button>
+
+
+                <a
+                    href="{{ url_for('events.list_events') }}"
+                    class="bg-gray-200 px-5 py-2 rounded-lg"
+                >
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>
