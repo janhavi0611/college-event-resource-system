@@ -7,7 +7,7 @@ from flask import Flask
 from .extensions import db, migrate
 from .models import Event, Resource
 from .routes.events import events_bp
-
+from .routes.resources import resources_bp
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -25,6 +25,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     app.register_blueprint(events_bp)
+    app.register_blueprint(resources_bp)
 
     @app.route("/")
     def home():
