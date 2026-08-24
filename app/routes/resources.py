@@ -220,3 +220,58 @@ def edit_resource(resource_id):
         resource=resource,
         resource_types=RESOURCE_TYPES
     )
+@resources_bp.route("/<int:resource_id>/deactivate", methods=["POST"])
+def deactivate_resource(resource_id):
+
+    resource = db.get_or_404(Resource, resource_id)
+
+    if not resource.is_active:
+        flash(
+            "Resource is already inactive.",
+            "error"
+        )
+
+        return redirect(
+            url_for("resources.list_resources")
+        )
+
+    resource.is_active = False
+
+    db.session.commit()
+
+    flash(
+        "Resource deactivated successfully.",
+        "success"
+    )
+
+    return redirect(
+        url_for("resources.list_resources")
+    )
+
+@resources_bp.route("/<int:resource_id>/activate", methods=["POST"])
+def activate_resource(resource_id):
+
+    resource = db.get_or_404(Resource, resource_id)
+
+    if resource.is_active:
+        flash(
+            "Resource is already active.",
+            "error"
+        )
+
+        return redirect(
+            url_for("resources.list_resources")
+        )
+
+    resource.is_active = True
+
+    db.session.commit()
+
+    flash(
+        "Resource activated successfully.",
+        "success"
+    )
+
+    return redirect(
+        url_for("resources.list_resources")
+    )
