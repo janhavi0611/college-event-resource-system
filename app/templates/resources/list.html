@@ -74,6 +74,10 @@
                                     Status
                                 </th>
 
+                                <th class="text-left px-6 py-4">
+                                    Actions
+                                </th>
+
                             </tr>
 
                         </thead>
@@ -133,6 +137,20 @@
 
                                     </td>
 
+                                    <td class="px-6 py-4">
+
+                                        <a
+                                            href="{{ url_for(
+                                                'resources.edit_resource',
+                                                resource_id=resource.id
+                                            ) }}"
+                                            class="text-blue-600 hover:underline"
+                                        >
+                                            Edit
+                                        </a>
+
+                                    </td>
+
                                 </tr>
 
                             {% endfor %}
@@ -159,4 +177,4 @@
 
 </body>
 
-</html> 
+</html>
