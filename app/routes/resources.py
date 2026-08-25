@@ -22,15 +22,25 @@ resources_bp = Blueprint(
 @resources_bp.route("/")
 def list_resources():
 
-    resources = Resource.query.order_by(
+    status = request.args.get("status", "").strip().lower()
+
+    query = Resource.query
+
+    if status == "active":
+        query = query.filter_by(is_active=True)
+
+    elif status == "inactive":
+        query = query.filter_by(is_active=False)
+
+    resources = query.order_by(
         Resource.name.asc()
     ).all()
 
     return render_template(
         "resources/list.html",
-        resources=resources
+        resources=resources,
+        selected_status=status
     )
-
 
 @resources_bp.route("/create", methods=["GET", "POST"])
 def create_resource():

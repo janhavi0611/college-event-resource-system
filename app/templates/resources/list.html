@@ -18,32 +18,34 @@
 
 
 <body class="bg-gray-100 min-h-screen">
+
     {% with messages = get_flashed_messages(with_categories=true) %}
 
-    {% if messages %}
+        {% if messages %}
 
-        <div class="max-w-6xl mx-auto px-6 pt-6">
+            <div class="max-w-6xl mx-auto px-6 pt-6">
 
-            {% for category, message in messages %}
+                {% for category, message in messages %}
 
-                <div
-                    class="mb-3 px-4 py-3 rounded-lg
-                    {% if category == 'success' %}
-                        bg-green-100 text-green-800
-                    {% else %}
-                        bg-red-100 text-red-800
-                    {% endif %}"
-                >
-                    {{ message }}
-                </div>
+                    <div
+                        class="mb-3 px-4 py-3 rounded-lg
+                        {% if category == 'success' %}
+                            bg-green-100 text-green-800
+                        {% else %}
+                            bg-red-100 text-red-800
+                        {% endif %}"
+                    >
+                        {{ message }}
+                    </div>
 
-            {% endfor %}
+                {% endfor %}
 
-        </div>
+            </div>
 
-    {% endif %}
+        {% endif %}
 
-{% endwith %}
+    {% endwith %}
+
 
     <div class="max-w-6xl mx-auto px-6 py-10">
 
@@ -70,6 +72,72 @@
             </a>
 
         </div>
+
+
+        <!-- Status Filter -->
+
+        <form
+            method="GET"
+            class="bg-white rounded-xl shadow p-4 mb-6"
+        >
+
+            <div class="flex flex-col md:flex-row gap-4 items-end">
+
+                <div class="flex-1">
+
+                    <label class="block font-medium mb-2">
+                        Filter by Status
+                    </label>
+
+                    <select
+                        name="status"
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                        <option
+                            value=""
+                            {% if not selected_status %}selected{% endif %}
+                        >
+                            All resources
+                        </option>
+
+                        <option
+                            value="active"
+                            {% if selected_status == "active" %}selected{% endif %}
+                        >
+                            Active
+                        </option>
+
+                        <option
+                            value="inactive"
+                            {% if selected_status == "inactive" %}selected{% endif %}
+                        >
+                            Inactive
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="bg-gray-900 text-white px-5 py-2 rounded-lg"
+                >
+                    Filter
+                </button>
+
+
+                <a
+                    href="{{ url_for('resources.list_resources') }}"
+                    class="bg-gray-200 px-5 py-2 rounded-lg"
+                >
+                    Clear
+                </a>
+
+            </div>
+
+        </form>
 
 
         <div class="bg-white rounded-xl shadow overflow-hidden">
@@ -132,6 +200,7 @@
                                         {% endif %}
 
                                     </td>
+
 
                                     <td class="px-6 py-4">
 
