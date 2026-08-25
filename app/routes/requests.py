@@ -25,6 +25,31 @@ requests_bp = Blueprint(
 )
 
 
+def check_resource_suitability(event, resource):
+    """
+    Check whether a resource is suitable for the event.
+
+    Returns:
+        (True, None) if the resource is suitable.
+        (False, reason) if it is not suitable.
+    """
+
+    if resource.capacity is not None:
+
+        if event.expected_attendance > resource.capacity:
+
+            return (
+                False,
+                (
+                    f"{resource.name} has capacity "
+                    f"{resource.capacity}, but the event "
+                    f"expects {event.expected_attendance} attendees."
+                )
+            )
+
+    return True, None
+
+
 @requests_bp.route("/")
 def list_requests():
 
@@ -72,10 +97,11 @@ def create_request():
             "resource_ids"
         )
 
-        # Check if the selected event is valid
+        # Make sure a valid event was selected
 
         try:
             event_id = int(event_id_value)
+
         except ValueError:
             flash(
                 "Please select a valid event.",
@@ -102,7 +128,7 @@ def create_request():
                 resources=resources
             )
 
-        # Check if at least one resource was selected
+        # At least one resource is required
 
         if not selected_resource_ids:
             flash(
@@ -134,7 +160,7 @@ def create_request():
                 resources=resources
             )
 
-        # Remove duplicate resource IDs
+        # Prevent the same resource from being added twice
 
         resource_ids = list(set(resource_ids))
 
@@ -154,6 +180,8 @@ def create_request():
                 resources=resources
             )
 
+        # Inactive resources should not be part of a request
+
         inactive_resources = [
             resource
             for resource in selected_resources
@@ -161,6 +189,7 @@ def create_request():
         ]
 
         if inactive_resources:
+
             names = ", ".join(
                 resource.name
                 for resource in inactive_resources
@@ -177,7 +206,32 @@ def create_request():
                 resources=resources
             )
 
-        # Check the requested date and time
+        # Check whether the selected resources can handle the event
+
+        unsuitable_resources = []
+
+        for resource in selected_resources:
+
+            suitable, reason = check_resource_suitability(
+                event,
+                resource
+            )
+
+            if not suitable:
+                unsuitable_resources.append(reason)
+
+        if unsuitable_resources:
+
+            for reason in unsuitable_resources:
+                flash(reason, "error")
+
+            return render_template(
+                "requests/create.html",
+                events=events,
+                resources=resources
+            )
+
+        # Convert the submitted date and time values
 
         try:
             start_datetime = datetime.fromisoformat(
@@ -212,7 +266,7 @@ def create_request():
                 resources=resources
             )
 
-        # Make sure the request stays within the event time
+        # The requested time must fall within the event time
 
         if start_datetime < event.start_datetime:
             flash(
@@ -238,7 +292,7 @@ def create_request():
                 resources=resources
             )
 
-        # Create the resource request
+        # Create the request and link the selected resources to it
 
         resource_request = ResourceRequest(
             event_id=event.id,
