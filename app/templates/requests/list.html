@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Resource Requests</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-100 min-h-screen">
+
+    {% with messages =
+        get_flashed_messages(with_categories=true)
+    %}
+
+        {% if messages %}
+
+            <div class="max-w-6xl mx-auto px-6 pt-6">
+
+                {% for category, message in messages %}
+
+                    <div
+                        class="mb-3 px-4 py-3 rounded-lg
+                        {% if category == 'success' %}
+                            bg-green-100 text-green-800
+                        {% else %}
+                            bg-red-100 text-red-800
+                        {% endif %}"
+                    >
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <div class="max-w-6xl mx-auto px-6 py-10">
+
+        <div class="flex justify-between items-center mb-8">
+
+            <div>
+
+                <h1 class="text-3xl font-bold">
+                    Resource Requests
+                </h1>
+
+                <p class="text-gray-600 mt-1">
+                    View submitted resource requests.
+                </p>
+
+            </div>
+
+
+            <a
+                href="{{ url_for('requests.create_request') }}"
+                class="bg-blue-600 text-white
+                       px-4 py-2 rounded-lg
+                       hover:bg-blue-700"
+            >
+                New Request
+            </a>
+
+        </div>
+
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+
+            {% if requests %}
+
+                <div class="overflow-x-auto">
+
+                    <table class="w-full">
+
+                        <thead class="bg-gray-50">
+
+                            <tr>
+
+                                <th class="text-left px-6 py-4">
+                                    Event
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Time
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Resources
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Status
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for resource_request in requests %}
+
+                                <tr class="border-t">
+
+                                    <td class="px-6 py-4 font-medium">
+
+                                        {{ resource_request.event.name }}
+
+                                    </td>
+
+
+                                    <td class="px-6 py-4">
+
+                                        {{ resource_request.start_datetime.strftime(
+                                            "%d %b %Y, %I:%M %p"
+                                        ) }}
+
+                                        <br>
+
+                                        <span class="text-gray-500">
+
+                                            to
+
+                                            {{ resource_request.end_datetime.strftime(
+                                                "%I:%M %p"
+                                            ) }}
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <td class="px-6 py-4">
+
+                                        <div class="space-y-1">
+
+                                            {% for item in resource_request.items %}
+
+                                                <div>
+                                                    {{ item.resource.name }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <td class="px-6 py-4">
+
+                                        <span
+                                            class="bg-yellow-100
+                                                   text-yellow-800
+                                                   px-3 py-1
+                                                   rounded-full
+                                                   text-sm"
+                                        >
+                                            {{ resource_request.status }}
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="p-8 text-center text-gray-500">
+
+                    No resource requests found.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

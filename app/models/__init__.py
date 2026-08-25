@@ -6,4 +6,5 @@ from .resource_request import (
     Allocation,
 )
 
+
 __all__ = ["Event", "Resource"]

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Create Resource Request</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="max-w-4xl mx-auto px-6 py-10">
+
+        <div class="mb-8">
+
+            <h1 class="text-3xl font-bold">
+                Request Resources
+            </h1>
+
+            <p class="text-gray-600 mt-1">
+                Request one or more resources for an event.
+            </p>
+
+        </div>
+
+
+        {% with messages =
+            get_flashed_messages(with_categories=true)
+        %}
+
+            {% if messages %}
+
+                <div class="mb-6 space-y-2">
+
+                    {% for category, message in messages %}
+
+                        <div
+                            class="px-4 py-3 rounded-lg
+                            {% if category == 'success' %}
+                                bg-green-100 text-green-800
+                            {% else %}
+                                bg-red-100 text-red-800
+                            {% endif %}"
+                        >
+                            {{ message }}
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+
+        {% endwith %}
+
+
+        <form
+            method="POST"
+            class="bg-white rounded-xl shadow p-6 space-y-6"
+        >
+
+            <!-- Event -->
+
+            <div>
+
+                <label class="block font-medium mb-2">
+                    Event
+                </label>
+
+                <select
+                    name="event_id"
+                    required
+                    class="w-full border rounded-lg px-4 py-2"
+                >
+
+                    <option value="">
+                        Select an event
+                    </option>
+
+                    {% for event in events %}
+
+                        <option value="{{ event.id }}">
+
+                            {{ event.name }}
+                            —
+                            {{ event.start_datetime.strftime(
+                                "%d %b %Y"
+                            ) }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- Date/time -->
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+
+                    <label class="block font-medium mb-2">
+                        Start Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        name="start_datetime"
+                        required
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label class="block font-medium mb-2">
+                        End Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        name="end_datetime"
+                        required
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- Resources -->
+
+            <div>
+
+                <label class="block font-medium mb-3">
+                    Select Resources
+                </label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                    {% for resource in resources %}
+
+                        <label
+                            class="border rounded-lg p-4
+                                   flex items-start gap-3
+                                   cursor-pointer
+                                   hover:bg-gray-50"
+                        >
+
+                            <input
+                                type="checkbox"
+                                name="resource_ids"
+                                value="{{ resource.id }}"
+                                class="mt-1"
+                            >
+
+                            <div>
+
+                                <div class="font-medium">
+                                    {{ resource.name }}
+                                </div>
+
+                                <div class="text-sm text-gray-500">
+
+                                    {{ resource.resource_type }}
+
+                                    {% if resource.capacity %}
+                                        · Capacity:
+                                        {{ resource.capacity }}
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+                        </label>
+
+                    {% else %}
+
+                        <p class="text-gray-500">
+                            No active resources are available.
+                        </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <div class="flex gap-3">
+
+                <button
+                    type="submit"
+                    class="bg-blue-600 text-white
+                           px-5 py-2 rounded-lg
+                           hover:bg-blue-700"
+                >
+                    Submit Request
+                </button>
+
+
+                <a
+                    href="{{ url_for('requests.list_requests') }}"
+                    class="bg-gray-200 px-5 py-2 rounded-lg"
+                >
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>
