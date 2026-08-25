@@ -32,5 +32,15 @@ class Resource(db.Model):
         default=datetime.utcnow
     )
 
+    request_items = db.relationship(
+    "ResourceRequestItem",
+    back_populates="resource"
+)
+
+    allocations = db.relationship(
+        "Allocation",
+        back_populates="resource"
+    )
+
     def __repr__(self):
         return f"<Resource {self.name}>"
