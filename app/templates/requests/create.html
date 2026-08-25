@@ -28,7 +28,7 @@
             </h1>
 
             <p class="text-gray-600 mt-1">
-                Request one or more resources for an event.
+                Request resources for an event.
             </p>
 
         </div>
@@ -144,60 +144,69 @@
             </div>
 
 
-            <!-- Resources -->
+            <!-- Resource requirement -->
 
-            <div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <label class="block font-medium mb-3">
-                    Select Resources
-                </label>
+                <div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <label class="block font-medium mb-2">
+                        Required Resource Type
+                    </label>
 
-                    {% for resource in resources %}
+                    <select
+                        name="required_resource_type"
+                        required
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
 
-                        <label
-                            class="border rounded-lg p-4
-                                   flex items-start gap-3
-                                   cursor-pointer
-                                   hover:bg-gray-50"
-                        >
+                        <option value="">
+                            Select resource type
+                        </option>
 
-                            <input
-                                type="checkbox"
-                                name="resource_ids"
-                                value="{{ resource.id }}"
-                                class="mt-1"
-                            >
+                        <option value="Auditorium">
+                            Auditorium
+                        </option>
 
-                            <div>
+                        <option value="Laboratory">
+                            Laboratory
+                        </option>
 
-                                <div class="font-medium">
-                                    {{ resource.name }}
-                                </div>
+                        <option value="Projector">
+                            Projector
+                        </option>
 
-                                <div class="text-sm text-gray-500">
+                        <option value="Microphone">
+                            Microphone
+                        </option>
 
-                                    {{ resource.resource_type }}
+                        <option value="Camera">
+                            Camera
+                        </option>
 
-                                    {% if resource.capacity %}
-                                        · Capacity:
-                                        {{ resource.capacity }}
-                                    {% endif %}
+                        <option value="Computer">
+                            Computer
+                        </option>
 
-                                </div>
+                    </select>
 
-                            </div>
+                </div>
 
-                        </label>
 
-                    {% else %}
+                <div>
 
-                        <p class="text-gray-500">
-                            No active resources are available.
-                        </p>
+                    <label class="block font-medium mb-2">
+                        Quantity
+                    </label>
 
-                    {% endfor %}
+                    <input
+                        type="number"
+                        name="quantity"
+                        min="1"
+                        value="1"
+                        required
+                        class="w-full border rounded-lg px-4 py-2"
+                    >
 
                 </div>
 

@@ -46,6 +46,38 @@ class ResourceRequest(db.Model):
         back_populates="request",
         cascade="all, delete-orphan"
     )
+    requirements = db.relationship(
+    "ResourceRequirement",
+    back_populates="request",
+    cascade="all, delete-orphan"
+)
+
+class ResourceRequirement(db.Model):
+    __tablename__ = "resource_requirements"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    request_id = db.Column(
+        db.Integer,
+        db.ForeignKey("resource_requests.id"),
+        nullable=False
+    )
+
+    resource_type = db.Column(
+        db.String(50),
+        nullable=False
+    )
+
+    quantity = db.Column(
+        db.Integer,
+        nullable=False,
+        default=1
+    )
+
+    request = db.relationship(
+        "ResourceRequest",
+        back_populates="requirements"
+    )
 
 class ResourceRequestItem(db.Model):
     __tablename__ = "resource_request_items"

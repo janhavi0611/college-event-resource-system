@@ -117,12 +117,16 @@
 
                                 <tr class="border-t">
 
+                                    <!-- Event -->
+
                                     <td class="px-6 py-4 font-medium">
 
                                         {{ resource_request.event.name }}
 
                                     </td>
 
+
+                                    <!-- Time -->
 
                                     <td class="px-6 py-4">
 
@@ -145,34 +149,116 @@
                                     </td>
 
 
+                                    <!-- Resources / Requirements -->
+
                                     <td class="px-6 py-4">
 
                                         <div class="space-y-1">
 
-                                            {% for item in resource_request.items %}
+                                            {% if resource_request.requirements %}
 
-                                                <div>
-                                                    {{ item.resource.name }}
-                                                </div>
+                                                {% for requirement in resource_request.requirements %}
 
-                                            {% endfor %}
+                                                    <div>
+
+                                                        {{ requirement.resource_type }}
+
+                                                        ×
+
+                                                        {{ requirement.quantity }}
+
+                                                    </div>
+
+                                                {% endfor %}
+
+                                            {% endif %}
+
+
+                                            {% if resource_request.items %}
+
+                                                {% for item in resource_request.items %}
+
+                                                    <div class="text-gray-600">
+
+                                                        {{ item.resource.name }}
+
+                                                    </div>
+
+                                                {% endfor %}
+
+                                            {% endif %}
+
+
+                                            {% if not resource_request.requirements
+                                                  and not resource_request.items %}
+
+                                                <span class="text-gray-400">
+
+                                                    No resources specified
+
+                                                </span>
+
+                                            {% endif %}
 
                                         </div>
 
                                     </td>
 
 
+                                    <!-- Status -->
+
                                     <td class="px-6 py-4">
 
-                                        <span
-                                            class="bg-yellow-100
-                                                   text-yellow-800
-                                                   px-3 py-1
-                                                   rounded-full
-                                                   text-sm"
-                                        >
-                                            {{ resource_request.status }}
-                                        </span>
+                                        {% if resource_request.status == "Pending" %}
+
+                                            <span
+                                                class="bg-yellow-100
+                                                       text-yellow-800
+                                                       px-3 py-1
+                                                       rounded-full
+                                                       text-sm"
+                                            >
+                                                Pending
+                                            </span>
+
+                                        {% elif resource_request.status == "Approved" %}
+
+                                            <span
+                                                class="bg-green-100
+                                                       text-green-800
+                                                       px-3 py-1
+                                                       rounded-full
+                                                       text-sm"
+                                            >
+                                                Approved
+                                            </span>
+
+                                        {% elif resource_request.status == "Rejected" %}
+
+                                            <span
+                                                class="bg-red-100
+                                                       text-red-800
+                                                       px-3 py-1
+                                                       rounded-full
+                                                       text-sm"
+                                            >
+                                                Rejected
+                                            </span>
+
+                                        {% else %}
+
+                                            <span
+                                                class="bg-gray-100
+                                                       text-gray-800
+                                                       px-3 py-1
+                                                       rounded-full
+                                                       text-sm"
+                                            >
+                                                {{ resource_request.status }}
+
+                                            </span>
+
+                                        {% endif %}
 
                                     </td>
 

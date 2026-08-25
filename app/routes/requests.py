@@ -15,6 +15,7 @@ from app.models import (
     Resource,
     ResourceRequest,
     ResourceRequestItem,
+    ResourceRequirement,
 )
 
 
@@ -35,9 +36,7 @@ def check_resource_suitability(event, resource):
     """
 
     if resource.capacity is not None:
-
         if event.expected_attendance > resource.capacity:
-
             return (
                 False,
                 (
@@ -93,16 +92,15 @@ def create_request():
             ""
         ).strip()
 
-        selected_resource_ids = request.form.getlist(
-            "resource_ids"
-        )
-
-        # Make sure a valid event was selected
+        # -------------------------------------------------
+        # Validate event
+        # -------------------------------------------------
 
         try:
             event_id = int(event_id_value)
 
         except ValueError:
+
             flash(
                 "Please select a valid event.",
                 "error"
@@ -114,9 +112,13 @@ def create_request():
                 resources=resources
             )
 
-        event = db.session.get(Event, event_id)
+        event = db.session.get(
+            Event,
+            event_id
+        )
 
         if event is None:
+
             flash(
                 "Selected event does not exist.",
                 "error"
@@ -128,112 +130,12 @@ def create_request():
                 resources=resources
             )
 
-        # At least one resource is required
-
-        if not selected_resource_ids:
-            flash(
-                "Please select at least one resource.",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
+        # -------------------------------------------------
+        # Validate date/time
+        # -------------------------------------------------
 
         try:
-            resource_ids = [
-                int(resource_id)
-                for resource_id in selected_resource_ids
-            ]
 
-        except ValueError:
-            flash(
-                "Invalid resource selection.",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        # Prevent the same resource from being added twice
-
-        resource_ids = list(set(resource_ids))
-
-        selected_resources = Resource.query.filter(
-            Resource.id.in_(resource_ids)
-        ).all()
-
-        if len(selected_resources) != len(resource_ids):
-            flash(
-                "One or more selected resources do not exist.",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        # Inactive resources should not be part of a request
-
-        inactive_resources = [
-            resource
-            for resource in selected_resources
-            if not resource.is_active
-        ]
-
-        if inactive_resources:
-
-            names = ", ".join(
-                resource.name
-                for resource in inactive_resources
-            )
-
-            flash(
-                f"Inactive resources cannot be requested: {names}",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        # Check whether the selected resources can handle the event
-
-        unsuitable_resources = []
-
-        for resource in selected_resources:
-
-            suitable, reason = check_resource_suitability(
-                event,
-                resource
-            )
-
-            if not suitable:
-                unsuitable_resources.append(reason)
-
-        if unsuitable_resources:
-
-            for reason in unsuitable_resources:
-                flash(reason, "error")
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        # Convert the submitted date and time values
-
-        try:
             start_datetime = datetime.fromisoformat(
                 start_value
             )
@@ -243,6 +145,7 @@ def create_request():
             )
 
         except ValueError:
+
             flash(
                 "Please enter valid start and end dates.",
                 "error"
@@ -255,6 +158,7 @@ def create_request():
             )
 
         if end_datetime <= start_datetime:
+
             flash(
                 "End date/time must be after start date/time.",
                 "error"
@@ -266,9 +170,12 @@ def create_request():
                 resources=resources
             )
 
-        # The requested time must fall within the event time
+        # -------------------------------------------------
+        # Make sure request time is inside event time
+        # -------------------------------------------------
 
         if start_datetime < event.start_datetime:
+
             flash(
                 "Request start time cannot be before the event starts.",
                 "error"
@@ -281,6 +188,7 @@ def create_request():
             )
 
         if end_datetime > event.end_datetime:
+
             flash(
                 "Request end time cannot be after the event ends.",
                 "error"
@@ -292,7 +200,74 @@ def create_request():
                 resources=resources
             )
 
-        # Create the request and link the selected resources to it
+        # -------------------------------------------------
+        # Get resource requirement
+        # -------------------------------------------------
+
+        required_resource_type = request.form.get(
+            "required_resource_type",
+            ""
+        ).strip()
+
+        quantity_value = request.form.get(
+            "quantity",
+            ""
+        ).strip()
+
+        # -------------------------------------------------
+        # Validate resource type
+        # -------------------------------------------------
+
+        if not required_resource_type:
+
+            flash(
+                "Please select a required resource type.",
+                "error"
+            )
+
+            return render_template(
+                "requests/create.html",
+                events=events,
+                resources=resources
+            )
+
+        # -------------------------------------------------
+        # Validate quantity
+        # -------------------------------------------------
+
+        try:
+
+            quantity = int(quantity_value)
+
+        except ValueError:
+
+            flash(
+                "Quantity must be a valid number.",
+                "error"
+            )
+
+            return render_template(
+                "requests/create.html",
+                events=events,
+                resources=resources
+            )
+
+        if quantity <= 0:
+
+            flash(
+                "Quantity must be at least 1.",
+                "error"
+            )
+
+            return render_template(
+                "requests/create.html",
+                events=events,
+                resources=resources
+            )
+
+        # -------------------------------------------------
+        # Create request + requirement
+        # -------------------------------------------------
 
         resource_request = ResourceRequest(
             event_id=event.id,
@@ -303,19 +278,26 @@ def create_request():
 
         db.session.add(resource_request)
 
-        for resource in selected_resources:
+        try:
 
-            item = ResourceRequestItem(
-                request=resource_request,
-                resource=resource
+            # Flush gives the request its database ID
+            # without committing the transaction yet.
+            db.session.flush()
+
+            resource_requirement = ResourceRequirement(
+                request_id=resource_request.id,
+                resource_type=required_resource_type,
+                quantity=quantity
             )
 
-            db.session.add(item)
+            db.session.add(resource_requirement)
 
-        try:
+            # Commit both records together.
             db.session.commit()
 
         except Exception:
+
+            # If anything fails, neither record is saved.
             db.session.rollback()
 
             flash(
@@ -328,6 +310,10 @@ def create_request():
                 events=events,
                 resources=resources
             )
+
+        # -------------------------------------------------
+        # Success
+        # -------------------------------------------------
 
         flash(
             "Resource request created successfully.",
