@@ -16,6 +16,7 @@ from app.models import (
     ResourceRequest,
     ResourceRequestItem,
     ResourceRequirement,
+    Allocation,
 )
 
 
@@ -34,7 +35,6 @@ def check_resource_suitability(event, resource):
         (True, None) if the resource is suitable.
         (False, reason) if it is not suitable.
     """
-
     if resource.capacity is not None:
         if event.expected_attendance > resource.capacity:
             return (
@@ -45,6 +45,66 @@ def check_resource_suitability(event, resource):
                     f"expects {event.expected_attendance} attendees."
                 )
             )
+
+    return True, None
+
+
+def check_resource_conflict(
+    resource_type,
+    quantity,
+    start_datetime,
+    end_datetime
+):
+    """
+    Check whether enough active resources of the requested type
+    are available during the requested time.
+
+    Returns:
+        (True, None) if enough resources are available.
+        (False, reason) if there is a conflict.
+    """
+
+    # Find all active resources of the requested type.
+    matching_resources = Resource.query.filter(
+        Resource.resource_type == resource_type,
+        Resource.is_active.is_(True)
+    ).all()
+
+    if len(matching_resources) < quantity:
+        return (
+            False,
+            (
+                f"Only {len(matching_resources)} active "
+                f"{resource_type} resource(s) are available, "
+                f"but {quantity} were requested."
+            )
+        )
+
+    available_count = 0
+
+    for resource in matching_resources:
+
+        # Look for an active allocation that overlaps
+        # with the requested time period.
+        conflicting_allocation = Allocation.query.filter(
+            Allocation.resource_id == resource.id,
+            Allocation.status == "Active",
+            Allocation.start_datetime < end_datetime,
+            Allocation.end_datetime > start_datetime
+        ).first()
+
+        if conflicting_allocation is None:
+            available_count += 1
+
+    if available_count < quantity:
+        return (
+            False,
+            (
+                f"Only {available_count} {resource_type} "
+                f"resource(s) are available for the requested "
+                f"time period, but {quantity} were requested."
+            )
+        )
 
     return True, None
 
@@ -100,7 +160,6 @@ def create_request():
             event_id = int(event_id_value)
 
         except ValueError:
-
             flash(
                 "Please select a valid event.",
                 "error"
@@ -118,7 +177,6 @@ def create_request():
         )
 
         if event is None:
-
             flash(
                 "Selected event does not exist.",
                 "error"
@@ -135,7 +193,6 @@ def create_request():
         # -------------------------------------------------
 
         try:
-
             start_datetime = datetime.fromisoformat(
                 start_value
             )
@@ -145,7 +202,6 @@ def create_request():
             )
 
         except ValueError:
-
             flash(
                 "Please enter valid start and end dates.",
                 "error"
@@ -158,7 +214,6 @@ def create_request():
             )
 
         if end_datetime <= start_datetime:
-
             flash(
                 "End date/time must be after start date/time.",
                 "error"
@@ -175,7 +230,6 @@ def create_request():
         # -------------------------------------------------
 
         if start_datetime < event.start_datetime:
-
             flash(
                 "Request start time cannot be before the event starts.",
                 "error"
@@ -188,7 +242,6 @@ def create_request():
             )
 
         if end_datetime > event.end_datetime:
-
             flash(
                 "Request end time cannot be after the event ends.",
                 "error"
@@ -219,7 +272,6 @@ def create_request():
         # -------------------------------------------------
 
         if not required_resource_type:
-
             flash(
                 "Please select a required resource type.",
                 "error"
@@ -236,11 +288,9 @@ def create_request():
         # -------------------------------------------------
 
         try:
-
             quantity = int(quantity_value)
 
         except ValueError:
-
             flash(
                 "Quantity must be a valid number.",
                 "error"
@@ -253,9 +303,31 @@ def create_request():
             )
 
         if quantity <= 0:
-
             flash(
                 "Quantity must be at least 1.",
+                "error"
+            )
+
+            return render_template(
+                "requests/create.html",
+                events=events,
+                resources=resources
+            )
+
+        # -------------------------------------------------
+        # Check resource conflict
+        # -------------------------------------------------
+
+        conflict_free, conflict_reason = check_resource_conflict(
+            required_resource_type,
+            quantity,
+            start_datetime,
+            end_datetime
+        )
+
+        if not conflict_free:
+            flash(
+                conflict_reason,
                 "error"
             )
 
@@ -279,7 +351,6 @@ def create_request():
         db.session.add(resource_request)
 
         try:
-
             # Flush gives the request its database ID
             # without committing the transaction yet.
             db.session.flush()
@@ -296,7 +367,6 @@ def create_request():
             db.session.commit()
 
         except Exception:
-
             # If anything fails, neither record is saved.
             db.session.rollback()
 
