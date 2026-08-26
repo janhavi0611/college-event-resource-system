@@ -25,7 +25,7 @@
 
         {% if messages %}
 
-            <div class="max-w-6xl mx-auto px-6 pt-6">
+            <div class="max-w-7xl mx-auto px-6 pt-6">
 
                 {% for category, message in messages %}
 
@@ -49,7 +49,7 @@
     {% endwith %}
 
 
-    <div class="max-w-6xl mx-auto px-6 py-10">
+    <div class="max-w-7xl mx-auto px-6 py-10">
 
         <div class="flex justify-between items-center mb-8">
 
@@ -60,7 +60,7 @@
                 </h1>
 
                 <p class="text-gray-600 mt-1">
-                    View submitted resource requests.
+                    Review and manage submitted resource requests.
                 </p>
 
             </div>
@@ -106,6 +106,10 @@
                                     Status
                                 </th>
 
+                                <th class="text-left px-6 py-4">
+                                    Actions
+                                </th>
+
                             </tr>
 
                         </thead>
@@ -149,7 +153,7 @@
                                     </td>
 
 
-                                    <!-- Resources / Requirements -->
+                                    <!-- Resources -->
 
                                     <td class="px-6 py-4">
 
@@ -176,15 +180,21 @@
 
                                             {% if resource_request.items %}
 
-                                                {% for item in resource_request.items %}
+                                                <div class="mt-2 text-sm text-gray-600">
 
-                                                    <div class="text-gray-600">
-
-                                                        {{ item.resource.name }}
-
+                                                    <div class="font-medium">
+                                                        Allocated:
                                                     </div>
 
-                                                {% endfor %}
+                                                    {% for item in resource_request.items %}
+
+                                                        <div>
+                                                            {{ item.resource.name }}
+                                                        </div>
+
+                                                    {% endfor %}
+
+                                                </div>
 
                                             {% endif %}
 
@@ -193,9 +203,7 @@
                                                   and not resource_request.items %}
 
                                                 <span class="text-gray-400">
-
                                                     No resources specified
-
                                                 </span>
 
                                             {% endif %}
@@ -224,13 +232,25 @@
                                         {% elif resource_request.status == "Approved" %}
 
                                             <span
+                                                class="bg-blue-100
+                                                       text-blue-800
+                                                       px-3 py-1
+                                                       rounded-full
+                                                       text-sm"
+                                            >
+                                                Approved
+                                            </span>
+
+                                        {% elif resource_request.status == "Allocated" %}
+
+                                            <span
                                                 class="bg-green-100
                                                        text-green-800
                                                        px-3 py-1
                                                        rounded-full
                                                        text-sm"
                                             >
-                                                Approved
+                                                Allocated
                                             </span>
 
                                         {% elif resource_request.status == "Rejected" %}
@@ -255,7 +275,76 @@
                                                        text-sm"
                                             >
                                                 {{ resource_request.status }}
+                                            </span>
 
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- Actions -->
+
+                                    <td class="px-6 py-4">
+
+                                        {% if resource_request.status == "Pending" %}
+
+                                            <div class="flex gap-3">
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ url_for(
+                                                        'requests.approve_request',
+                                                        request_id=resource_request.id
+                                                    ) }}"
+                                                    onsubmit="return confirm(
+                                                        'Approve and allocate this request?'
+                                                    );"
+                                                >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="bg-green-600
+                                                               text-white
+                                                               px-3 py-2
+                                                               rounded-lg
+                                                               hover:bg-green-700"
+                                                    >
+                                                        Approve
+                                                    </button>
+
+                                                </form>
+
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ url_for(
+                                                        'requests.reject_request',
+                                                        request_id=resource_request.id
+                                                    ) }}"
+                                                    onsubmit="return confirm(
+                                                        'Reject this request?'
+                                                    );"
+                                                >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="bg-red-600
+                                                               text-white
+                                                               px-3 py-2
+                                                               rounded-lg
+                                                               hover:bg-red-700"
+                                                    >
+                                                        Reject
+                                                    </button>
+
+                                                </form>
+
+                                            </div>
+
+                                        {% else %}
+
+                                            <span class="text-gray-400">
+                                                —
                                             </span>
 
                                         {% endif %}
