@@ -11,6 +11,7 @@ from flask import (
 
 from app.extensions import db
 from app.models import Event
+from app.models import Allocation
 
 
 events_bp = Blueprint("events", __name__, url_prefix="/events")
@@ -308,6 +309,16 @@ def edit_event(event_id):
                 event=event
             )
 
+        active_allocations = [item.allocation for resource_request in event.resource_requests
+                              for item in resource_request.items
+                              if item.allocation and item.allocation.status == "Active"]
+        if active_allocations and any(
+            allocation.start_datetime < start_datetime or allocation.end_datetime > end_datetime
+            for allocation in active_allocations
+        ):
+            flash("The new event time must include all active resource allocations. Cancel those requests first.", "error")
+            return render_template("events/edit.html", event=event)
+
         event.name = name
         event.organizer = organizer
         event.expected_attendance = expected_attendance
@@ -364,12 +375,25 @@ def cancel_event(event_id):
             url_for("events.list_events")
         )
 
-    event.status = "Cancelled"
-
-    db.session.commit()
+    try:
+        # An event cancellation must release every active booking it owns.
+        for resource_request in event.resource_requests:
+            if resource_request.status == "Allocated":
+                for item in resource_request.items:
+                    if item.allocation is not None:
+                        item.allocation.status = "Cancelled"
+                resource_request.status = "Cancelled"
+            elif resource_request.status == "Pending":
+                resource_request.status = "Cancelled"
+        event.status = "Cancelled"
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Unable to cancel the event. No bookings were changed.", "error")
+        return redirect(url_for("events.list_events"))
 
     flash(
-        "Event cancelled successfully.",
+        "Event cancelled and its active resource allocations were released.",
         "success"
     )
 

@@ -2,7 +2,7 @@ import os
 
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, redirect, url_for
 
 from .extensions import db, migrate
 from .models import Event, Resource
@@ -33,6 +33,15 @@ def create_app():
 
     @app.route("/")
     def home():
-        return "College Event Resource Allocation System"
+        return redirect(url_for("dashboard.dashboard"))
+
+    @app.errorhandler(404)
+    def not_found(_error):
+        return "The page you requested was not found.", 404
+
+    @app.errorhandler(500)
+    def internal_error(_error):
+        db.session.rollback()
+        return "Something went wrong. Please try again.", 500
 
     return app

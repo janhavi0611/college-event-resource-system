@@ -10,6 +10,7 @@ from flask import (
 from app.constants import RESOURCE_TYPES
 from app.extensions import db
 from app.models import Resource
+from app.models import Allocation
 
 
 resources_bp = Blueprint(
@@ -285,3 +286,39 @@ def activate_resource(resource_id):
     return redirect(
         url_for("resources.list_resources")
     )
+
+
+@resources_bp.route("/availability", methods=["GET"])
+def availability():
+    """Show active resources that are free for a selected time window."""
+    start_value = request.args.get("start_datetime", "").strip()
+    end_value = request.args.get("end_datetime", "").strip()
+    resource_type = request.args.get("resource_type", "").strip()
+    resources = []
+    error = None
+
+    if start_value or end_value:
+        try:
+            from datetime import datetime
+            start_datetime = datetime.fromisoformat(start_value)
+            end_datetime = datetime.fromisoformat(end_value)
+            if end_datetime <= start_datetime:
+                raise ValueError
+            query = Resource.query.filter_by(is_active=True)
+            if resource_type:
+                query = query.filter_by(resource_type=resource_type)
+            for resource in query.order_by(Resource.name.asc()).all():
+                busy = Allocation.query.filter(
+                    Allocation.resource_id == resource.id,
+                    Allocation.status == "Active",
+                    Allocation.start_datetime < end_datetime,
+                    Allocation.end_datetime > start_datetime,
+                ).first()
+                if not busy:
+                    resources.append(resource)
+        except ValueError:
+            error = "Enter a valid time range with an end time after the start time."
+
+    return render_template("resources/availability.html", resources=resources,
+                           resource_types=RESOURCE_TYPES, selected_type=resource_type,
+                           start_value=start_value, end_value=end_value, error=error)
