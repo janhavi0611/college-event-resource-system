@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 
 from flask import (
@@ -87,11 +88,18 @@ def find_available_resources(
     resource_type,
     quantity,
     start_datetime,
-    end_datetime
+    end_datetime,
+    excluded_resource_ids=None
 ):
     """
     Find suitable and available resources for a requirement.
+
+    excluded_resource_ids prevents the same physical resource
+    from being selected twice during one approval.
     """
+
+    if excluded_resource_ids is None:
+        excluded_resource_ids = set()
 
     matching_resources = Resource.query.filter(
         Resource.resource_type == resource_type,
@@ -103,6 +111,11 @@ def find_available_resources(
     available_resources = []
 
     for resource in matching_resources:
+
+        # Skip resources that were already selected
+
+        if resource.id in excluded_resource_ids:
+            continue
 
         suitable, _ = check_resource_suitability(
             event,
@@ -128,51 +141,50 @@ def find_available_resources(
 
 
 def check_resource_conflict(
+    event,
     resource_type,
     quantity,
     start_datetime,
     end_datetime
 ):
     """
-    Check whether enough active resources of the requested
-    type are available during the requested time.
+    Check whether enough suitable and available resources
+    exist for the requested requirement.
     """
 
-    matching_resources = Resource.query.filter(
-        Resource.resource_type == resource_type,
-        Resource.is_active.is_(True)
-    ).all()
+    available_resources = find_available_resources(
+        event,
+        resource_type,
+        quantity,
+        start_datetime,
+        end_datetime
+    )
 
-    if len(matching_resources) < quantity:
+    if len(available_resources) < quantity:
 
-        return (
-            False,
-            (
-                f"Only {len(matching_resources)} active "
-                f"{resource_type} resource(s) exist, "
-                f"but {quantity} were requested."
+        matching_resources = Resource.query.filter(
+            Resource.resource_type == resource_type,
+            Resource.is_active.is_(True)
+        ).all()
+
+        if len(matching_resources) < quantity:
+
+            return (
+                False,
+                (
+                    f"Only {len(matching_resources)} active "
+                    f"{resource_type} resource(s) exist, "
+                    f"but {quantity} were requested."
+                )
             )
-        )
-
-    available_count = 0
-
-    for resource in matching_resources:
-
-        if not resource_has_conflict(
-            resource,
-            start_datetime,
-            end_datetime
-        ):
-            available_count += 1
-
-    if available_count < quantity:
 
         return (
             False,
             (
-                f"Only {available_count} {resource_type} "
-                f"resource(s) are available for the requested "
-                f"time period, but {quantity} were requested."
+                f"Only {len(available_resources)} suitable and "
+                f"available {resource_type} resource(s) exist "
+                f"for the requested time, but {quantity} "
+                f"were requested."
             )
         )
 
@@ -207,22 +219,12 @@ def create_request():
 
     if request.method == "POST":
 
+        # Check if the event is valid
+
         event_id_value = request.form.get(
             "event_id",
             ""
         ).strip()
-
-        start_value = request.form.get(
-            "start_datetime",
-            ""
-        ).strip()
-
-        end_value = request.form.get(
-            "end_datetime",
-            ""
-        ).strip()
-
-        # Check if the selected event is valid
 
         try:
             event_id = int(event_id_value)
@@ -258,6 +260,16 @@ def create_request():
 
         # Check the request dates
 
+        start_value = request.form.get(
+            "start_datetime",
+            ""
+        ).strip()
+
+        end_value = request.form.get(
+            "end_datetime",
+            ""
+        ).strip()
+
         try:
             start_datetime = datetime.fromisoformat(
                 start_value
@@ -291,7 +303,7 @@ def create_request():
                 resources=resources
             )
 
-        # Make sure the request stays within the event time
+        # Make sure the request stays inside the event time
 
         if start_datetime < event.start_datetime:
             flash(
@@ -317,76 +329,33 @@ def create_request():
                 resources=resources
             )
 
-        # Get the resource requirement
+        # Get all the resource requirements
 
-        required_resource_type = request.form.get(
-            "required_resource_type",
-            ""
-        ).strip()
-
-        quantity_value = request.form.get(
-            "quantity",
-            ""
-        ).strip()
-
-        # Check if the resource type is valid
-
-        if required_resource_type not in ALLOWED_RESOURCE_TYPES:
-
-            flash(
-                "Invalid resource type selected.",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        # Check if the quantity is valid
-
-        try:
-            quantity = int(quantity_value)
-
-        except ValueError:
-            flash(
-                "Quantity must be a valid number.",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        if quantity <= 0:
-
-            flash(
-                "Quantity must be at least 1.",
-                "error"
-            )
-
-            return render_template(
-                "requests/create.html",
-                events=events,
-                resources=resources
-            )
-
-        # Make sure enough resources are available
-
-        conflict_free, conflict_reason = check_resource_conflict(
-            required_resource_type,
-            quantity,
-            start_datetime,
-            end_datetime
+        resource_type_values = request.form.getlist(
+            "required_resource_type"
         )
 
-        if not conflict_free:
+        quantity_values = request.form.getlist(
+            "quantity"
+        )
 
+        # Also support the [] form field names
+
+        if not resource_type_values:
+            resource_type_values = request.form.getlist(
+                "required_resource_type[]"
+            )
+
+        if not quantity_values:
+            quantity_values = request.form.getlist(
+                "quantity[]"
+            )
+
+        # Make sure at least one requirement was added
+
+        if not resource_type_values:
             flash(
-                conflict_reason,
+                "Please add at least one resource requirement.",
                 "error"
             )
 
@@ -396,7 +365,111 @@ def create_request():
                 resources=resources
             )
 
-        # Create the request and its requirement
+        if len(resource_type_values) != len(quantity_values):
+            flash(
+                "Each resource requirement must have a quantity.",
+                "error"
+            )
+
+            return render_template(
+                "requests/create.html",
+                events=events,
+                resources=resources
+            )
+
+        # Validate each requirement
+
+        requirements = []
+
+        aggregated_requirements = defaultdict(int)
+
+        for resource_type_value, quantity_value in zip(
+            resource_type_values,
+            quantity_values
+        ):
+
+            resource_type = resource_type_value.strip()
+
+            if resource_type not in ALLOWED_RESOURCE_TYPES:
+                flash(
+                    f"Invalid resource type: {resource_type}",
+                    "error"
+                )
+
+                return render_template(
+                    "requests/create.html",
+                    events=events,
+                    resources=resources
+                )
+
+            try:
+                quantity = int(quantity_value)
+
+            except ValueError:
+                flash(
+                    "Quantity must be a valid number.",
+                    "error"
+                )
+
+                return render_template(
+                    "requests/create.html",
+                    events=events,
+                    resources=resources
+                )
+
+            if quantity <= 0:
+                flash(
+                    "Quantity must be at least 1.",
+                    "error"
+                )
+
+                return render_template(
+                    "requests/create.html",
+                    events=events,
+                    resources=resources
+                )
+
+            aggregated_requirements[resource_type] += quantity
+
+        # Combine duplicate resource types into one requirement
+
+        for resource_type, quantity in aggregated_requirements.items():
+
+            requirements.append(
+                {
+                    "resource_type": resource_type,
+                    "quantity": quantity
+                }
+            )
+
+        # Check that every requirement can be fulfilled
+
+        for requirement in requirements:
+
+            conflict_free, conflict_reason = (
+                check_resource_conflict(
+                    event,
+                    requirement["resource_type"],
+                    requirement["quantity"],
+                    start_datetime,
+                    end_datetime
+                )
+            )
+
+            if not conflict_free:
+
+                flash(
+                    conflict_reason,
+                    "error"
+                )
+
+                return render_template(
+                    "requests/create.html",
+                    events=events,
+                    resources=resources
+                )
+
+        # Create the request and all its requirements
 
         resource_request = ResourceRequest(
             event_id=event.id,
@@ -408,19 +481,29 @@ def create_request():
         db.session.add(resource_request)
 
         try:
+
+            # Get the request ID before adding its requirements
+
             db.session.flush()
 
-            resource_requirement = ResourceRequirement(
-                request_id=resource_request.id,
-                resource_type=required_resource_type,
-                quantity=quantity
-            )
+            for requirement in requirements:
 
-            db.session.add(resource_requirement)
+                resource_requirement = ResourceRequirement(
+                    request_id=resource_request.id,
+                    resource_type=requirement["resource_type"],
+                    quantity=requirement["quantity"]
+                )
+
+                db.session.add(
+                    resource_requirement
+                )
+
+            # Save the request and requirements together
 
             db.session.commit()
 
         except Exception:
+
             db.session.rollback()
 
             flash(
@@ -487,10 +570,12 @@ def approve_request(request_id):
 
     try:
 
-        # Find resources for every requirement first.
-        # Nothing is saved until all requirements can be satisfied.
+        # Find resources for every requirement first
+        # Only allocate them if all requirements can be met
 
         resources_to_allocate = []
+
+        selected_resource_ids = set()
 
         for requirement in resource_request.requirements:
 
@@ -499,7 +584,8 @@ def approve_request(request_id):
                 requirement.resource_type,
                 requirement.quantity,
                 resource_request.start_datetime,
-                resource_request.end_datetime
+                resource_request.end_datetime,
+                excluded_resource_ids=selected_resource_ids
             )
 
             if len(available_resources) < requirement.quantity:
@@ -516,7 +602,12 @@ def approve_request(request_id):
                 available_resources
             )
 
-        # All requirements are satisfied, so create the allocations.
+            selected_resource_ids.update(
+                resource.id
+                for resource in available_resources
+            )
+
+        # All requirements are satisfied, so create the allocations
 
         resource_request.status = "Approved"
 
@@ -527,7 +618,9 @@ def approve_request(request_id):
                 resource_id=resource.id
             )
 
-            db.session.add(request_item)
+            db.session.add(
+                request_item
+            )
 
             db.session.flush()
 
@@ -539,11 +632,13 @@ def approve_request(request_id):
                 status="Active"
             )
 
-            db.session.add(allocation)
-
-        # The allocation was successful.
+            db.session.add(
+                allocation
+            )
 
         resource_request.status = "Allocated"
+
+        # Save the allocations
 
         db.session.commit()
 
@@ -618,7 +713,21 @@ def reject_request(request_id):
 
     resource_request.status = "Rejected"
 
-    db.session.commit()
+    try:
+        db.session.commit()
+
+    except Exception:
+
+        db.session.rollback()
+
+        flash(
+            "Unable to reject the resource request.",
+            "error"
+        )
+
+        return redirect(
+            url_for("requests.list_requests")
+        )
 
     flash(
         "Resource request rejected.",

@@ -21,6 +21,8 @@
 
     <div class="max-w-4xl mx-auto px-6 py-10">
 
+        <!-- Page heading -->
+
         <div class="mb-8">
 
             <h1 class="text-3xl font-bold">
@@ -28,11 +30,13 @@
             </h1>
 
             <p class="text-gray-600 mt-1">
-                Request resources for an event.
+                Request one or more resources for an event.
             </p>
 
         </div>
 
+
+        <!-- Flash messages -->
 
         {% with messages =
             get_flashed_messages(with_categories=true)
@@ -63,6 +67,8 @@
 
         {% endwith %}
 
+
+        <!-- Request form -->
 
         <form
             method="POST"
@@ -144,14 +150,214 @@
             </div>
 
 
-            <!-- Resource requirement -->
+            <!-- Resource requirements -->
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+
+                <div class="flex justify-between items-center mb-3">
+
+                    <div>
+
+                        <label class="block font-medium">
+                            Resource Requirements
+                        </label>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Add one or more resource types and quantities.
+                        </p>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        id="add-resource"
+                        class="bg-gray-900 text-white
+                               px-4 py-2 rounded-lg
+                               hover:bg-gray-800"
+                    >
+                        + Add Resource
+                    </button>
+
+                </div>
+
+
+                <!-- Resource rows -->
+
+                <div
+                    id="resource-requirements"
+                    class="space-y-3"
+                >
+
+                    <!-- First row -->
+
+                    <div
+                        class="resource-row
+                               grid grid-cols-1 md:grid-cols-[1fr_160px_auto]
+                               gap-3 items-end"
+                    >
+
+                        <div>
+
+                            <label class="block text-sm font-medium mb-1">
+                                Resource Type
+                            </label>
+
+                            <select
+                                name="required_resource_type"
+                                required
+                                class="w-full border rounded-lg px-4 py-2"
+                            >
+
+                                <option value="">
+                                    Select resource type
+                                </option>
+
+                                <option value="Auditorium">
+                                    Auditorium
+                                </option>
+
+                                <option value="Laboratory">
+                                    Laboratory
+                                </option>
+
+                                <option value="Projector">
+                                    Projector
+                                </option>
+
+                                <option value="Microphone">
+                                    Microphone
+                                </option>
+
+                                <option value="Camera">
+                                    Camera
+                                </option>
+
+                                <option value="Computer">
+                                    Computer
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div>
+
+                            <label class="block text-sm font-medium mb-1">
+                                Quantity
+                            </label>
+
+                            <input
+                                type="number"
+                                name="quantity"
+                                min="1"
+                                value="1"
+                                required
+                                class="w-full border rounded-lg px-4 py-2"
+                            >
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            class="remove-resource
+                                   hidden
+                                   bg-red-100 text-red-700
+                                   px-4 py-2 rounded-lg
+                                   hover:bg-red-200"
+                        >
+                            Remove
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Submit -->
+
+            <div class="flex gap-3">
+
+                <button
+                    type="submit"
+                    class="bg-blue-600 text-white
+                           px-5 py-2 rounded-lg
+                           hover:bg-blue-700"
+                >
+                    Submit Request
+                </button>
+
+
+                <a
+                    href="{{ url_for('requests.list_requests') }}"
+                    class="bg-gray-200 px-5 py-2 rounded-lg"
+                >
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+    <!-- Multiple resource JavaScript -->
+
+    <script>
+
+        const requirementsContainer =
+            document.getElementById("resource-requirements");
+
+        const addResourceButton =
+            document.getElementById("add-resource");
+
+
+        function updateRemoveButtons() {
+
+            const rows =
+                requirementsContainer.querySelectorAll(
+                    ".resource-row"
+                );
+
+            rows.forEach(function(row) {
+
+                const removeButton =
+                    row.querySelector(".remove-resource");
+
+                if (rows.length > 1) {
+
+                    removeButton.classList.remove("hidden");
+
+                } else {
+
+                    removeButton.classList.add("hidden");
+
+                }
+
+            });
+
+        }
+
+
+        function createResourceRow() {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "resource-row grid grid-cols-1 md:grid-cols-[1fr_160px_auto] gap-3 items-end";
+
+
+            row.innerHTML = `
 
                 <div>
 
-                    <label class="block font-medium mb-2">
-                        Required Resource Type
+                    <label class="block text-sm font-medium mb-1">
+                        Resource Type
                     </label>
 
                     <select
@@ -195,7 +401,7 @@
 
                 <div>
 
-                    <label class="block font-medium mb-2">
+                    <label class="block text-sm font-medium mb-1">
                         Quantity
                     </label>
 
@@ -210,33 +416,70 @@
 
                 </div>
 
-            </div>
-
-
-            <div class="flex gap-3">
 
                 <button
-                    type="submit"
-                    class="bg-blue-600 text-white
-                           px-5 py-2 rounded-lg
-                           hover:bg-blue-700"
+                    type="button"
+                    class="remove-resource
+                           bg-red-100 text-red-700
+                           px-4 py-2 rounded-lg
+                           hover:bg-red-200"
                 >
-                    Submit Request
+                    Remove
                 </button>
 
+            `;
 
-                <a
-                    href="{{ url_for('requests.list_requests') }}"
-                    class="bg-gray-200 px-5 py-2 rounded-lg"
-                >
-                    Cancel
-                </a>
+            requirementsContainer.appendChild(row);
 
-            </div>
+            updateRemoveButtons();
 
-        </form>
+        }
 
-    </div>
+
+        addResourceButton.addEventListener(
+            "click",
+            function() {
+
+                createResourceRow();
+
+            }
+        );
+
+
+        requirementsContainer.addEventListener(
+            "click",
+            function(event) {
+
+                if (
+                    event.target.classList.contains(
+                        "remove-resource"
+                    )
+                ) {
+
+                    const rows =
+                        requirementsContainer.querySelectorAll(
+                            ".resource-row"
+                        );
+
+                    if (rows.length > 1) {
+
+                        event.target
+                            .closest(".resource-row")
+                            .remove();
+
+                        updateRemoveButtons();
+
+                    }
+
+                }
+
+            }
+        );
+
+
+        updateRemoveButtons();
+
+    </script>
 
 </body>
 
