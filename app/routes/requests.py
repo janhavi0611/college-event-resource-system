@@ -737,3 +737,63 @@ def reject_request(request_id):
     return redirect(
         url_for("requests.list_requests")
     )
+@requests_bp.route(
+    "/<int:request_id>/cancel",
+    methods=["POST"]
+)
+def cancel_request(request_id):
+
+    resource_request = db.session.get(
+        ResourceRequest,
+        request_id
+    )
+
+    if resource_request is None:
+        flash(
+            "Resource request not found.",
+            "error"
+        )
+        return redirect(
+            url_for("requests.list_requests")
+        )
+
+    if resource_request.status != "Allocated":
+        flash(
+            "Only allocated requests can be cancelled.",
+            "error"
+        )
+        return redirect(
+            url_for("requests.list_requests")
+        )
+
+    try:
+        # Release all allocations belonging to this request.
+        for item in resource_request.items:
+
+            if item.allocation is not None:
+                item.allocation.status = "Cancelled"
+
+        resource_request.status = "Cancelled"
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+
+        flash(
+            "Unable to cancel the resource request.",
+            "error"
+        )
+
+        return redirect(
+            url_for("requests.list_requests")
+        )
+
+    flash(
+        "Resource request cancelled and resources released.",
+        "success"
+    )
+
+    return redirect(
+        url_for("requests.list_requests")
+    )
