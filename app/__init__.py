@@ -9,6 +9,7 @@ from .models import Event, Resource
 from .routes.events import events_bp
 from .routes.resources import resources_bp
 from .routes.requests import requests_bp
+from app.routes.dashboard import dashboard_bp
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -28,6 +29,7 @@ def create_app():
     app.register_blueprint(events_bp)
     app.register_blueprint(resources_bp)
     app.register_blueprint(requests_bp)
+    app.register_blueprint(dashboard_bp)
 
     @app.route("/")
     def home():

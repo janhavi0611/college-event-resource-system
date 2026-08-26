@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Dashboard</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-6 py-10">
+
+        <!-- Header -->
+
+        <div class="mb-8">
+
+            <h1 class="text-3xl font-bold">
+                College Event Resource Dashboard
+            </h1>
+
+            <p class="text-gray-600 mt-1">
+                Overview of events, resources and resource requests.
+            </p>
+
+        </div>
+
+
+        <!-- Main Statistics -->
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+            <div class="bg-white rounded-xl shadow p-6">
+                <p class="text-gray-500">
+                    Total Events
+                </p>
+
+                <p class="text-3xl font-bold mt-2">
+                    {{ total_events }}
+                </p>
+            </div>
+
+
+            <div class="bg-white rounded-xl shadow p-6">
+                <p class="text-gray-500">
+                    Total Resources
+                </p>
+
+                <p class="text-3xl font-bold mt-2">
+                    {{ total_resources }}
+                </p>
+            </div>
+
+
+            <div class="bg-white rounded-xl shadow p-6">
+                <p class="text-gray-500">
+                    Total Requests
+                </p>
+
+                <p class="text-3xl font-bold mt-2">
+                    {{ total_requests }}
+                </p>
+            </div>
+
+        </div>
+
+
+        <!-- Resource Summary -->
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+            <div class="bg-white rounded-xl shadow p-6">
+
+                <h2 class="text-xl font-semibold mb-4">
+                    Resource Summary
+                </h2>
+
+                <div class="flex justify-between border-b py-3">
+                    <span>Active Resources</span>
+
+                    <span class="font-semibold">
+                        {{ active_resources }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between py-3">
+                    <span>Inactive Resources</span>
+
+                    <span class="font-semibold">
+                        {{ inactive_resources }}
+                    </span>
+                </div>
+
+            </div>
+
+
+            <!-- Request Summary -->
+
+            <div class="bg-white rounded-xl shadow p-6">
+
+                <h2 class="text-xl font-semibold mb-4">
+                    Request Summary
+                </h2>
+
+                <div class="flex justify-between border-b py-3">
+                    <span>Pending</span>
+
+                    <span class="font-semibold">
+                        {{ pending_requests }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between border-b py-3">
+                    <span>Allocated</span>
+
+                    <span class="font-semibold">
+                        {{ allocated_requests }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between border-b py-3">
+                    <span>Rejected</span>
+
+                    <span class="font-semibold">
+                        {{ rejected_requests }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between py-3">
+                    <span>Cancelled</span>
+
+                    <span class="font-semibold">
+                        {{ cancelled_requests }}
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Upcoming Events -->
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+
+            <div class="p-6 border-b">
+
+                <h2 class="text-xl font-semibold">
+                    Upcoming Events
+                </h2>
+
+            </div>
+
+
+            {% if upcoming_events %}
+
+                <div class="overflow-x-auto">
+
+                    <table class="w-full">
+
+                        <thead class="bg-gray-50">
+
+                            <tr>
+
+                                <th class="text-left px-6 py-4">
+                                    Event
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Organizer
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Date & Time
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Attendance
+                                </th>
+
+                                <th class="text-left px-6 py-4">
+                                    Status
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for event in upcoming_events %}
+
+                                <tr class="border-t">
+
+                                    <td class="px-6 py-4 font-medium">
+                                        {{ event.name }}
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        {{ event.organizer }}
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        {{ event.start_datetime.strftime(
+                                            "%d %b %Y, %I:%M %p"
+                                        ) }}
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        {{ event.expected_attendance }}
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        {{ event.status }}
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="p-8 text-center text-gray-500">
+                    No events found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- Navigation -->
+
+        <div class="mt-8 flex gap-3">
+
+            <a
+                href="{{ url_for('events.list_events') }}"
+                class="bg-blue-600 text-white px-5 py-2 rounded-lg"
+            >
+                Events
+            </a>
+
+            <a
+                href="{{ url_for('resources.list_resources') }}"
+                class="bg-blue-600 text-white px-5 py-2 rounded-lg"
+            >
+                Resources
+            </a>
+
+            <a
+                href="{{ url_for('requests.list_requests') }}"
+                class="bg-blue-600 text-white px-5 py-2 rounded-lg"
+            >
+                Requests
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
